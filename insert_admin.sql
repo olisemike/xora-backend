@@ -1,0 +1,1 @@
+UPDATE admin_users SET permissions = '["view_analytics", "import_social_media", "all"]' WHERE id = 'admin_u_mkdsd4z01u3h4q202m1s3';

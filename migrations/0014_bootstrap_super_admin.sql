@@ -1,0 +1,26 @@
+-- Bootstrap Super Admin User
+-- This migration creates the initial super admin account
+-- DISABLED: Admin users will be created via API after deployment
+
+-- INSERT INTO admin_users (id, user_id, role, permissions, created_at)
+-- SELECT
+--   'admin_olisemike',
+--   'u_mk4jxw622u39x424q1510',
+--   'super_admin',
+--   '[' ||
+--     '"manage_users",' ||
+--     '"manage_admins",' ||
+--     '"moderate_content",' ||
+--     '"manage_ads",' ||
+--     '"view_analytics",' ||
+--     '"manage_reports",' ||
+--     '"view_audit_logs",' ||
+--     '"manage_pages",' ||
+--     '"manage_content",' ||
+--     '"manage_settings"' ||
+--   ']',
+--   datetime('now')
+-- WHERE NOT EXISTS (
+--   SELECT 1 FROM admin_users WHERE user_id = 'u_mk4jxw622u39x424q1510'
+-- );
+

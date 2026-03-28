@@ -1,0 +1,33 @@
+# ============================================
+# DEVELOPMENT ENVIRONMENT VARIABLES
+# Copy this file to .dev.vars and fill in your values
+# ============================================
+
+# JWT Secret - REQUIRED
+# Generate with: openssl rand -base64 32
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+
+# Encryption Key for 2FA secrets - REQUIRED  
+# Generate with: openssl rand -base64 32
+ENCRYPTION_KEY=your-super-secret-encryption-key-change-this
+
+# Email Service (Resend)
+# RESEND_API_KEY=re_your_api_key
+# FROM_EMAIL=noreply@yourdomain.com
+
+# SMS Service (Twilio)
+# TWILIO_ACCOUNT_SID=ACxxxx
+# TWILIO_AUTH_TOKEN=xxxx
+# TWILIO_PHONE_NUMBER=+1234567890
+
+# Cloudflare Services
+# CLOUDFLARE_ACCOUNT_ID=your-account-id
+# CLOUDFLARE_API_TOKEN=your-api-token
+# CLOUDFLARE_IMAGES_HASH=your-images-hash
+# CLOUDFLARE_STREAM_SUBDOMAIN=customer-subdomain
+
+# reCAPTCHA
+# Set secret via wrangler or .dev.vars (never commit real secret)
+# RECAPTCHA_SECRET_KEY=your_recaptcha_secret
+# Optional: minimum score for v3
+# RECAPTCHA_MIN_SCORE=0.5

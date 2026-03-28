@@ -1,0 +1,44 @@
+{
+  "name": "xora-backend",
+  "version": "1.0.0",
+  "description": "Xora Social - Complete Backend API",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "dev:remote": "wrangler dev --remote",
+    "deploy": "wrangler deploy",
+    "migrate": "powershell -ExecutionPolicy Bypass -File scripts/migrate-all.ps1 -Database DB -Mode local",
+    "migrate:db2": "powershell -ExecutionPolicy Bypass -File scripts/migrate-all.ps1 -Database DB2 -Mode local",
+    "migrate:db3": "powershell -ExecutionPolicy Bypass -File scripts/migrate-all.ps1 -Database DB3 -Mode local",
+    "migrate:remote": "powershell -ExecutionPolicy Bypass -File scripts/migrate-all.ps1 -Database DB -Mode remote",
+    "create-admin": "node scripts/create-admin.js",
+    "stress-test": "node run-stress-test.js",
+    "stress-test:monitor": "node monitor-stress-test.js",
+    "stress-test:load": "npx artillery run load-test.yml",
+    "stress-test:extreme": "npx artillery run stress-test.yml",
+    "stress-test:simple": "node simple-stress-test.js"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "social-media",
+    "api"
+  ],
+  "author": "Xora Social",
+  "license": "MIT",
+  "devDependencies": {
+    "artillery": "^2.0.30",
+    "eslint": "^8.57.1",
+    "eslint-plugin-jsonc": "^2.21.0",
+    "eslint-plugin-promise": "^7.2.1",
+    "eslint-plugin-unused-imports": "^4.3.0",
+    "jsonc-eslint-parser": "^2.4.2",
+    "wrangler": "^4.35.0"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "itty-router": "^4.0.0",
+    "jose": "^5.0.0",
+    "nanoid": "^5.1.6"
+  }
+}

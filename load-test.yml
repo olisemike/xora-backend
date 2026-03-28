@@ -1,0 +1,72 @@
+config:
+  target: "http://localhost:8787"
+  phases:
+    - duration: 120
+      arrivalRate: 5
+      name: Warm-up
+    - duration: 300
+      arrivalRate: 15
+      rampTo: 30
+      name: Ramp to moderate load
+    - duration: 600
+      arrivalRate: 30
+      name: Sustained moderate load
+  defaults:
+    headers:
+      Content-Type: "application/json"
+      Authorization: "Bearer {{ $processEnvironment.AUTH_TOKEN }}"
+    timeout: 20
+  variables:
+    username: "{{ $processEnvironment.USERNAME || 'sloane1' }}"
+    pageId: "{{ $processEnvironment.PAGE_ID || 'pg_demo' }}"
+    postId: "{{ $processEnvironment.POST_ID || 'post_demo' }}"
+    conversationId: "{{ $processEnvironment.CONVERSATION_ID || 'conv_demo' }}"
+  plugins:
+    metrics-by-endpoint: {}
+  ensure:
+    p95: 800
+    p99: 1500
+    maxErrorRate: 1
+
+scenarios:
+  - name: Core authenticated reads
+    weight: 45
+    flow:
+      - get:
+          url: "/auth/me"
+      - get:
+          url: "/feed?limit=20"
+      - get:
+          url: "/notifications/count"
+      - get:
+          url: "/notifications?limit=20"
+      - get:
+          url: "/settings"
+      - get:
+          url: "/bookmarks"
+      - get:
+          url: "/conversations"
+
+  - name: Discovery feeds
+    weight: 35
+    flow:
+      - get:
+          url: "/users/suggested"
+      - get:
+          url: "/search?q=xora&limit=10"
+      - get:
+          url: "/reels/feed"
+      - get:
+          url: "/stories/feed"
+      - get:
+          url: "/ads/eligible?placement=feed"
+
+  - name: Public health checks
+    weight: 20
+    flow:
+      - get:
+          url: "/health"
+      - get:
+          url: "/health/ready"
+      - get:
+          url: "/health/live"

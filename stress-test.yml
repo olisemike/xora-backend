@@ -1,0 +1,71 @@
+config:
+  target: "http://localhost:8787"
+  phases:
+    - duration: 60
+      arrivalRate: 25
+      name: Warm-up
+    - duration: 180
+      arrivalRate: 50
+      rampTo: 100
+      name: Ramp to high
+    - duration: 300
+      arrivalRate: 100
+      name: Sustained high load
+    - duration: 120
+      arrivalRate: 150
+      name: Peak burst
+    - duration: 120
+      arrivalRate: 80
+      name: Recovery
+  defaults:
+    headers:
+      Content-Type: "application/json"
+      Authorization: "Bearer {{ $processEnvironment.AUTH_TOKEN }}"
+    timeout: 25
+  plugins:
+    metrics-by-endpoint: {}
+  ensure:
+    p95: 1500
+    p99: 3000
+    maxErrorRate: 2
+
+scenarios:
+  - name: Read-heavy authenticated traffic
+    weight: 70
+    flow:
+      - get:
+          url: "/auth/me"
+      - get:
+          url: "/feed?limit=20"
+      - get:
+          url: "/search?q=xora&limit=10"
+      - get:
+          url: "/bookmarks"
+      - get:
+          url: "/notifications"
+      - get:
+          url: "/notifications/count"
+      - get:
+          url: "/conversations"
+
+  - name: Media + discovery
+    weight: 20
+    flow:
+      - get:
+          url: "/reels/feed"
+      - get:
+          url: "/stories/feed"
+      - get:
+          url: "/users/suggested"
+      - get:
+          url: "/ads/eligible?placement=feed"
+
+  - name: Platform health probes
+    weight: 10
+    flow:
+      - get:
+          url: "/health"
+      - get:
+          url: "/health/ready"
+      - get:
+          url: "/health/live"

@@ -1,0 +1,245 @@
+name = "xora-workers-api"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+account_id = "7fe26552990070e661d5f182566d039f"
+
+# ======================
+# DATABASES - LOCAL (Development)
+# ======================
+[[d1_databases]]
+binding = "DB"
+database_name = "xora-social-db-local"
+database_id = "0a2162cd-cd0e-4300-9040-8a6850549c71"
+
+[[d1_databases]]
+binding = "DB2"
+database_name = "xora-social-db-local-2"
+database_id = "fb5281b3-6ad2-4eb2-bf94-68b9685e4da6"
+
+[[d1_databases]]
+binding = "DB3"
+database_name = "xora-social-db-local-archive"
+database_id = "9be765b8-6ad1-46e0-a4f1-6abc2b452d62"
+
+# ======================
+# PRODUCTION ENVIRONMENT
+# ======================
+[env.production]
+name = "xora-workers-api-production"
+
+# Production databases (remote)
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "xora-social-db"
+database_id = "e5662a24-9f8b-44b1-9585-f3dda9101680"
+
+[[env.production.d1_databases]]
+binding = "DB2"
+database_name = "xora-social-db-2"
+database_id = "52733e01-b6a2-413a-b574-bf6672a74fe5"
+
+[[env.production.d1_databases]]
+binding = "DB3"
+database_name = "xora-social-db-archive"
+database_id = "7d263bee-08b2-44df-9365-3145de3115db"
+
+# Production storage (remote)
+[[env.production.r2_buckets]]
+binding = "STORAGE"
+bucket_name = "xora-social-media"
+
+[[env.production.r2_buckets]]
+binding = "SNAPSHOTS"
+bucket_name = "xora-social-snapshots"
+
+# Production KV (remote)
+[[env.production.kv_namespaces]]
+binding = "CACHE"
+id = "d81a700a2125496e80ce1c018d4e3adb"
+
+# ======================
+# STORAGE - LOCAL (Development)
+# ======================
+[[r2_buckets]]
+binding = "STORAGE"
+bucket_name = "xora-social-media-local"
+
+[[r2_buckets]]
+binding = "SNAPSHOTS"
+bucket_name = "xora-social-snapshots-local"
+
+# ======================
+# KV - LOCAL (Development)
+# ======================
+[[kv_namespaces]]
+binding = "CACHE"
+id = "d81a700a2125496e80ce1c018d4e3adb"
+preview_id = "a932c77a3de24c80bc73e46d11e15f73"
+
+# ======================
+# DURABLE OBJECTS
+# ======================
+[[durable_objects.bindings]]
+name = "CHAT_ROOM"
+class_name = "ChatRoom"
+
+[[durable_objects.bindings]]
+name = "NOTIFICATION_HUB"
+class_name = "NotificationHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ChatRoom", "NotificationHub"]
+
+# ======================
+# DEFAULT VARIABLES (NON-SECRET)
+# ======================
+[vars]
+ENVIRONMENT = "development"
+
+JWT_ACCESS_EXPIRY = "15m"
+JWT_REFRESH_EXPIRY = "7d"
+ADMIN_EMAIL = "olisemike9@gmail.com"
+
+SUPPORTED_LANGUAGES = "en,es,fr,ar,zh,pt,hi,de,ja,ru"
+
+# Archival
+DB_ARCHIVAL_ENABLED = "true"
+DB_ARCHIVAL_THRESHOLD = "80"
+DB_ARCHIVAL_AGE_MONTHS = "18"
+DB_SNAPSHOT_AGE_MONTHS = "18"
+DB_ARCHIVAL_CHECK_INTERVAL = "3600"
+
+# Feed algorithm
+FEED_BATCH_SIZES = "100,500,1000,10000,100000"
+FEED_ENGAGEMENT_THRESHOLD = "10"
+FEED_RECOVERY_THRESHOLD = "20"
+FEED_DECAY_PERIOD = "72"
+FEED_INTEGRITY_WINDOW = "1"
+FEED_PRIMARY_WINDOW = "2"
+FEED_STABILITY_WINDOW = "60"
+
+# URLs
+WEB_APP_URL = "https://xorasocial.com"
+ADMIN_APP_URL = "https://adminusers.xorasocial.com"
+MOBILE_APP_URL = "exp://autosaas--xora-social.expo.dev"
+API_URL = "https://xora-workers-api-production.xorasocial.workers.dev"
+
+# Cloudflare (non-secret)
+CLOUDFLARE_ACCOUNT_ID = "7fe26552990070e661d5f182566d039f"
+CF_ACCOUNT_ID = "7fe26552990070e661d5f182566d039f"
+CLOUDFLARE_IMAGES_HASH = "1eL4FEtJQavAd5JjFtJe7Q"
+CLOUDFLARE_STREAM_SUBDOMAIN = "customer-virwr1ukt49zj3yu.cloudflarestream.com"
+CLOUDFLARE_IMAGES_DELIVERY_URL = "https://imagedelivery.net/1eL4FEtJQavAd5JjFtJe7Q"
+
+# reCAPTCHA (public)
+RECAPTCHA_SITE_KEY = "6LdjiEQsAAAAACy0Yrtr_AVvJTFZQFTjnRFpHxY1"
+
+# Web Push
+VAPID_PUBLIC_KEY = "BFqmraAH_8mLio94AV8B0LXaUzzDNy4H-1FJp3-P34KcfA8W5q2wROePs-Kib5f9PCsp9BR4W0lN7YCB2pwlO_Y"
+
+# ======================
+# SECRETS
+# ======================
+# CF_API_TOKEN - Cloudflare API token with Images and Stream edit permissions
+# RECAPTCHA_SECRET_KEY - Google reCAPTCHA v3 secret key for server-side verification
+# Set with: wrangler secret put CF_API_TOKEN
+
+# ======================
+# PRODUCTION ENVIRONMENT
+# ======================
+[env.production.vars]
+ENVIRONMENT = "production"
+
+DB_ARCHIVAL_ENABLED = "true"
+DB_ARCHIVAL_THRESHOLD = "80"
+DB_ARCHIVAL_AGE_MONTHS = "18"
+DB_SNAPSHOT_AGE_MONTHS = "18"
+DB_ARCHIVAL_CHECK_INTERVAL = "3600"
+CLOUDFLARE_ACCOUNT_ID = "7fe26552990070e661d5f182566d039f"
+CF_ACCOUNT_ID = "7fe26552990070e661d5f182566d039f"
+CLOUDFLARE_IMAGES_HASH = "1eL4FEtJQavAd5JjFtJe7Q"
+CLOUDFLARE_STREAM_SUBDOMAIN = "customer-virwr1ukt49zj3yu.cloudflarestream.com"
+CLOUDFLARE_IMAGES_DELIVERY_URL = "https://imagedelivery.net/1eL4FEtJQavAd5JjFtJe7Q"
+
+JWT_ACCESS_EXPIRY = "15m"
+JWT_REFRESH_EXPIRY = "7d"
+ADMIN_EMAIL = "olisemike9@gmail.com"
+RECAPTCHA_SITE_KEY = "6LdjiEQsAAAAACy0Yrtr_AVvJTFZQFTjnRFpHxY1"
+SUPPORTED_LANGUAGES = "en,es,fr,ar,zh,pt,hi,de,ja,ru"
+VAPID_PUBLIC_KEY = "BFqmraAH_8mLio94AV8B0LXaUzzDNy4H-1FJp3-P34KcfA8W5q2wROePs-Kib5f9PCsp9BR4W0lN7YCB2pwlO_Y"
+FROM_EMAIL = "noreply@xorasocial.com"
+CLOUDFLARE_EMAIL_DOMAIN = "xorasocial.com"
+
+ALLOWED_ORIGINS = "https://xorasocial.com,https://www.xorasocial.com,https://xorasocial.pages.dev,https://xora-workers-api-production.xorasocial.workers.dev,https://xora-social-adminusers.pages.dev,https://adminusers.xorasocial.com,https://www.adminusers.xorasocial.com"
+
+# Rate limits (increased for mobile app aggressive reconnects)
+RATE_LIMIT_LOGIN = "10/15m"
+RATE_LIMIT_SIGNUP = "10000/hour"
+RATE_LIMIT_POST = "30/hour"
+RATE_LIMIT_COMMENT = "120/hour"
+RATE_LIMIT_MESSAGE = "2000/hour"
+RATE_LIMIT_LIKE = "500/hour"
+RATE_LIMIT_FOLLOW = "100/hour"
+RATE_LIMIT_API = "3000/hour"
+RATE_LIMIT_ADMIN = "200/minute"
+
+# Media limits
+MAX_IMAGE_SIZE = "104857600"
+MAX_VIDEO_SIZE = "1073741824"
+MAX_VIDEO_LENGTH_POST = "3600"
+MAX_VIDEO_LENGTH_REEL = "3600"
+MAX_IMAGES_PER_POST = "10"
+MAX_VIDEOS_PER_POST = "5"
+
+# Content limits
+MAX_POST_LENGTH = "500"
+MAX_COMMENT_LENGTH = "150"
+MAX_BIO_LENGTH = "150"
+MAX_HASHTAGS = "30"
+
+# Feed algorithm settings
+FEED_BATCH_SIZES = "100,500,1000,10000,100000"
+FEED_ENGAGEMENT_THRESHOLD = "10"
+FEED_RECOVERY_THRESHOLD = "20"
+FEED_DECAY_PERIOD = "72"
+FEED_INTEGRITY_WINDOW = "1"
+FEED_PRIMARY_WINDOW = "2"
+FEED_STABILITY_WINDOW = "60"
+
+# URLs
+WEB_APP_URL = "https://xorasocial.com"
+ADMIN_APP_URL = "https://adminusers.xorasocial.com"
+MOBILE_APP_URL = "exp://autosaas--xora-social.expo.dev"
+API_URL = "https://xora-workers-api-production.xorasocial.workers.dev"
+
+# Production Durable Objects
+[[env.production.durable_objects.bindings]]
+name = "CHAT_ROOM"
+class_name = "ChatRoom"
+
+[[env.production.durable_objects.bindings]]
+name = "NOTIFICATION_HUB"
+class_name = "NotificationHub"
+
+# ======================
+# CRON TRIGGERS - PRODUCTION
+# ======================
+[env.production.triggers]
+crons = [
+  "0 * * * *",   # Hourly - trending scores + archival check
+  "0 2 * * *"    # Daily at 2 AM - cleanup + weekly snapshot (checks for Monday)
+]
+
+# ======================
+# BUILD / DEV
+# ======================
+[build]
+command = "npm install"
+
+[dev]
+port = 8787
+ip = "0.0.0.0"
+local_protocol = "http"

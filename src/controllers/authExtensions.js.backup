@@ -1,0 +1,258 @@
+// ============================================
+// AUTH CONTROLLER EXTENSIONS
+// New endpoints for session management
+// ============================================
+
+import { generateTokenPair, verifyToken, hashToken } from '../services/jwt.js';
+import {
+  generateDeviceFingerprint,
+  recordLoginAttempt,
+  isDeviceVerified,
+  createDeviceVerification,
+  verifyDeviceCode,
+  updateDeviceLastUsed,
+  getLoginHistory,
+  getVerifiedDevices
+} from '../services/deviceTracking.js';
+import {
+  sendLoginNotification,
+  sendDeviceVerificationEmail
+} from '../services/notifications.js';
+import {
+  generateId,
+  now,
+  hoursFromNow,
+  errorResponse,
+  successResponse
+} from '../utils/helpers.js';
+
+/**
+ * POST /auth/logout-all-devices
+ * Invalidate all tokens by incrementing token_version
+ */
+export async function logoutAllDevices(db, env, userId) {
+  try {
+    // Increment token_version to invalidate all existing tokens
+    await db.prepare(`
+      UPDATE users SET token_version = token_version + 1
+      WHERE id = ?
+    `).bind(userId).run();
+
+    // Delete all refresh tokens for this user
+    await db.prepare(`
+      DELETE FROM refresh_tokens WHERE user_id = ?
+    `).bind(userId).run();
+
+    // Get updated user with new token_version
+    const user = await db.prepare(`
+      SELECT id, email, token_version FROM users WHERE id = ?
+    `).bind(userId).first();
+
+    if (!user) {
+      return errorResponse('User not found', 404);
+    }
+
+    // Generate new tokens with new version
+    const { accessToken, refreshToken } = await generateTokenPair(
+      user.id,
+      user.email,
+      user.token_version
+    );
+
+    // Store new refresh token
+    const tokenHash = await hashToken(refreshToken);
+    await db.prepare(`
+      INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, created_at)
+      VALUES (?, ?, ?, ?, ?)
+    `).bind(
+      generateId('rt'),
+      user.id,
+      tokenHash,
+      hoursFromNow(720), // 30 days
+      now()
+    ).run();
+
+    return successResponse({
+      tokens: {
+        accessToken,
+        refreshToken
+      }
+    }, 'All devices logged out successfully. Please use the new tokens.');
+
+  } catch (error) {
+    console.error('Logout all devices error:', error);
+    return errorResponse('Failed to logout all devices', 500);
+  }
+}
+
+/**
+ * POST /auth/verify-device
+ * Verify device with email code
+ */
+export async function verifyDevice(db, env, request, userId) {
+  try {
+    const body = await request.json();
+    const { verificationCode } = body;
+
+    if (!verificationCode) {
+      return errorResponse('Verification code is required', 400);
+    }
+
+    const result = await verifyDeviceCode(db, userId, verificationCode);
+
+    if (!result.success) {
+      return errorResponse(result.error, 400);
+    }
+
+    return successResponse({
+      deviceId: result.deviceId
+    }, 'Device verified successfully');
+
+  } catch (error) {
+    console.error('Verify device error:', error);
+    return errorResponse('Device verification failed', 500);
+  }
+}
+
+/**
+ * GET /auth/login-history
+ * Get user's login history
+ */
+export async function getUserLoginHistory(db, env, userId) {
+  try {
+    const history = await getLoginHistory(db, userId, 10);
+
+    return successResponse({
+      history: history.map(h => ({
+        id: h.id,
+        platform: h.platform,
+        deviceInfo: JSON.parse(h.device_info || '{}'),
+        ipAddress: h.ip_address,
+        status: h.status,
+        timestamp: h.logged_in_at
+      }))
+    });
+
+  } catch (error) {
+    console.error('Get login history error:', error);
+    return errorResponse('Failed to get login history', 500);
+  }
+}
+
+/**
+ * GET /auth/verified-devices
+ * Get user's verified devices
+ */
+export async function getUserVerifiedDevices(db, env, userId) {
+  try {
+    const devices = await getVerifiedDevices(db, userId);
+
+    return successResponse({
+      devices: devices.map(d => ({
+        id: d.id,
+        platform: d.platform,
+        deviceInfo: JSON.parse(d.device_info || '{}'),
+        firstVerified: d.first_verified_at,
+        lastUsed: d.last_used_at
+      }))
+    });
+
+  } catch (error) {
+    console.error('Get verified devices error:', error);
+    return errorResponse('Failed to get verified devices', 500);
+  }
+}
+
+/**
+ * Helper: Process login with device tracking
+ * This should be called from the main login endpoint
+ */
+export async function processLoginWithDeviceTracking(db, env, user, request, deviceInfo) {
+  try {
+    // Extract request info
+    const ipAddress = request.headers.get('cf-connecting-ip') ||
+                     request.headers.get('x-forwarded-for') ||
+                     'unknown';
+    const userAgent = request.headers.get('user-agent') || 'unknown';
+
+    // Generate device fingerprint
+    const deviceFingerprint = generateDeviceFingerprint(userAgent, deviceInfo?.platform);
+
+    // Check if device is already verified
+    const isVerified = await isDeviceVerified(db, user.id, deviceFingerprint);
+
+    if (!isVerified) {
+      // Create device verification request
+      const verification = await createDeviceVerification(
+        db,
+        user.id,
+        deviceInfo,
+        ipAddress,
+        deviceFingerprint
+      );
+
+      // Send verification email
+      try {
+        await sendDeviceVerificationEmail(env, user, verification.verificationCode, deviceInfo);
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        // Continue anyway - user can request new code
+      }
+
+      // Record login attempt as pending verification
+      await recordLoginAttempt(db, user.id, deviceInfo, ipAddress, userAgent, 'pending_verification');
+
+      return {
+        requiresDeviceVerification: true,
+        message: `A verification code has been sent to ${user.email}. Please check your email.`
+      };
+    }
+
+    // Device is verified - proceed with login
+    // Update last used timestamp
+    await updateDeviceLastUsed(db, user.id, deviceFingerprint);
+
+    // Record successful login
+    await recordLoginAttempt(db, user.id, deviceInfo, ipAddress, userAgent, 'success');
+
+    // Send login notification (async, don't wait)
+    sendLoginNotification(db, env, user, deviceInfo, ipAddress).catch(err =>
+      console.error('Failed to send login notification:', err)
+    );
+
+    // Get user's current token version
+    const tokenVersion = user.token_version || 0;
+
+    // Generate tokens
+    const { accessToken, refreshToken } = await generateTokenPair(
+      user.id,
+      user.email,
+      tokenVersion
+    );
+
+    // Store refresh token
+    const tokenHash = await hashToken(refreshToken);
+    await db.prepare(`
+      INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, created_at)
+      VALUES (?, ?, ?, ?, ?)
+    `).bind(
+      generateId('rt'),
+      user.id,
+      tokenHash,
+      hoursFromNow(720), // 30 days
+      now()
+    ).run();
+
+    return {
+      requiresDeviceVerification: false,
+      tokens: {
+        accessToken,
+        refreshToken
+      }
+    };
+
+  } catch (error) {
+    console.error('Device tracking error:', error);
+    throw error;
+  }
+}

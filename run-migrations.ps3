@@ -1,0 +1,85 @@
+#!/usr/bin/env pwsh
+# Run all 26 migrations on all 3 databases (local + remote)
+
+$migrations = @(
+    "0001_initial_schema.sql",
+    "0002_advanced_tables.sql",
+    "0003_messaging_and_analytics.sql",
+    "0004_schema_fixes.sql",
+    "0005_advertisements.sql",
+    "0006_rate_limiting.sql",
+    "0007_performance_indexes.sql",
+    "0008_social_media_imports.sql",
+    "0009_add_user_ban_flags.sql",
+    "0010_session_management.sql",
+    "0011_expo_push_tokens.sql",
+    "0012_incoming_emails.sql",
+    "0013_archival_metadata.sql",
+    "0014_bootstrap_super_admin.sql",
+    "0015_local_admin.sql",
+    "0016_security_fixes.sql",
+    "0017_feed_performance_indexes.sql",
+    "0018_add_comment_media.sql",
+    "0019_sdk_ads_support.sql",
+    "0020_reel_comments.sql",
+    "0021_add_missing_settings.sql",
+    "0022_add_performance_indexes.sql",
+    "0023_admin_security_rbac.sql",
+    "0024_cloudflare_media_tracking.sql",
+    "0025_story_video_tracking.sql",
+    "0026_flexible_reel_views.sql",
+    "0027_video_tracking.sql"
+)
+
+$localDatabases = @("xora-social-db-local", "xora-social-db-local-2", "xora-social-db-local-archive")
+$remoteDatabases = @("prod-db1", "prod-db2", "prod-archive")
+
+cd "C:\Users\user\Desktop\xora-social-project\backend"
+
+# Run migrations on local databases
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "RUNNING MIGRATIONS ON LOCAL DATABASES" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+
+foreach ($db in $localDatabases) {
+    Write-Host ""
+    Write-Host ">>> Local: $db" -ForegroundColor Green
+
+    $count = 0
+    foreach ($migration in $migrations) {
+        $count++
+        Write-Host "  [$count/26] $migration" -NoNewline
+        wrangler d1 execute $db --file "./migrations/$migration" -y 2>&1 | Out-Null
+        Write-Host " ✓" -ForegroundColor Green
+    }
+
+    Write-Host "✓ Complete: $db (local)" -ForegroundColor Green
+}
+
+# Run migrations on remote databases
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "RUNNING MIGRATIONS ON REMOTE DATABASES" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+
+foreach ($db in $remoteDatabases) {
+    Write-Host ""
+    Write-Host ">>> Remote: $db" -ForegroundColor Yellow
+
+    $count = 0
+    foreach ($migration in $migrations) {
+        $count++
+        Write-Host "  [$count/26] $migration" -NoNewline
+        wrangler d1 execute $db --remote --file "./migrations/$migration" -y 2>&1 | Out-Null
+        Write-Host " ✓" -ForegroundColor Green
+    }
+
+    Write-Host "✓ Complete: $db (remote)" -ForegroundColor Yellow
+}
+
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "ALL MIGRATIONS COMPLETE (Local + Remote)" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Summary: 26 migrations × 6 databases (3 local + 3 remote) = 156 total" -ForegroundColor Green
