@@ -31,3 +31,6 @@ ENCRYPTION_KEY=your-super-secret-encryption-key-change-this
 # RECAPTCHA_SECRET_KEY=your_recaptcha_secret
 # Optional: minimum score for v3
 # RECAPTCHA_MIN_SCORE=0.5
+
+# Local development admin bootstrap
+LOCAL_ADMIN_EMAILS=your-admin-email@example.com
